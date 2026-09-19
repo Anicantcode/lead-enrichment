@@ -1,0 +1,75 @@
+[project]
+name = "lead-enrichment"
+version = "1.0.0"
+description = "Production-grade lead enrichment & tiering pipeline powered by TypeSafe Jev (System One models). Ingest one large CSV/Excel file, get back 5 tiered files from Platinum → Reject, with calibrated scores, confidence-gated routing, and full audit trail."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "lead-enrichment" }]
+keywords = ["lead-enrichment", "jev", "typesafe", "system-one", "lead-scoring", "csv", "excel"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+  "typesafe-sdk>=0.4.0",
+  "pandas>=2.0",
+  "openpyxl>=3.1",
+  "xlrd>=2.0",
+  "pyarrow>=14",
+  "pydantic>=2.5",
+  "pydantic-settings>=2.0",
+  "typer>=0.12",
+  "rich>=13.7",
+  "pyyaml>=6.0",
+  "python-dotenv>=1.0",
+  "tqdm>=4.66",
+  "email-validator>=2.1",
+  "phonenumbers>=8.13",
+  "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.23",
+  "pytest-cov>=5",
+  "ruff>=0.3",
+  "mypy>=1.9",
+]
+
+[project.urls]
+Homepage = "https://github.com/Anicantcode/lead-enrichment"
+Documentation = "https://docs.typesafe.ai/introduction"
+Repository = "https://github.com/Anicantcode/lead-enrichment"
+
+[project.scripts]
+lead-enrich = "lead_enrichment.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lead_enrichment"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "C4"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src"]
