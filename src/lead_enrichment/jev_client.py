@@ -240,8 +240,9 @@ class JevClient:
         self._mock_mode = False
         self._client = None  # lazy
 
-        # decide mock
-        has_key = bool(self.settings.typesafe_api_key and self.settings.typesafe_api_key.startswith("tsk_"))
+        # decide mock — accept tsk_, vck_, or any plausible key (Typesafe rotates prefixes)
+        raw_key = (self.settings.typesafe_api_key or "").strip()
+        has_key = bool(raw_key and len(raw_key) > 16)  # covers tsk_, vck_, etc.
         if not has_key and config.runtime.mock_if_no_key:
             log.warning("TYPESAFE_API_KEY missing — running in MOCK mode (deterministic heuristics). Set TYPESAFE_API_KEY for live Jev calls.")
             self._mock_mode = True
@@ -253,12 +254,13 @@ class JevClient:
     async def __aenter__(self):
         if not self._mock_mode:
             try:
-                from typesafe_sdk import AsyncTypeSafeClient
+                from typesafe_sdk import AsyncTypeSafeClient, RetryPolicy
 
+                # disable SDK's built-in retries — we handle retry + fallback ourselves
+                # to avoid double-retry storm (SDK 3 retries × our 3 retries = 9× per lead)
                 self._client = AsyncTypeSafeClient(
-                    # SDK reads env vars automatically; we also pass explicit if needed
+                    retry=RetryPolicy(max_retries=1, backoff_max=0.5, timeout=8.0)
                 )
-                # enter context
                 await self._client.__aenter__()
             except Exception as e:
                 log.warning(f"Failed to init TypeSafe client ({e}) — falling back to mock mode")
@@ -370,8 +372,11 @@ class JevClient:
                     return self._parse_response(response)
                 except Exception as e:
                     last_err = e
-                    # check if retryable
-                    is_retryable = "rate" in str(e).lower() or "429" in str(e) or "timeout" in str(e).lower() or "503" in str(e) or "502" in str(e)
+                    msg = str(e).lower()
+                    # retryable = rate limit or transient 5xx / timeout — NOT connection/SSL
+                    # (connection/SSL in this sandbox = network egress blocked → fallback immediately,
+                    # otherwise we'd do SDK retries × our retries = 10+ seconds per lead)
+                    is_retryable = any(k in msg for k in ("rate", "429", "timeout", "503", "502", "temporarily", "unavailable"))
                     if attempt < self.config.runtime.max_retries and is_retryable:
                         backoff = (2 ** attempt) * 0.4 + random.random() * 0.3
                         log.warning(f"Jev call failed (attempt {attempt+1}/{self.config.runtime.max_retries+1}): {e} — retry in {backoff:.1f}s")

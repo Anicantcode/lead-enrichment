@@ -16,3 +16,4 @@ output/
 .coverage
 htmlcov/
 examples/out/
+out_live/
