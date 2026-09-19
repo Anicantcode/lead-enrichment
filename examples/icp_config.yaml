@@ -1,0 +1,66 @@
+# Lead Enrichment — ICP + scoring config
+# Edit this file and pass it as:  lead-enrich enrich leads.csv --config icp_config.yaml
+
+icp:
+  name: "B2B SaaS — RevOps / Growth ICP"
+  description: "B2B SaaS companies, 11-1000 employees, buying modern GTM tooling (enrichment, outbound, CRM). Decision makers in RevOps, Growth, Sales."
+  target_industries:
+    - SaaS
+    - Software
+    - Fintech
+    - Marketing Tech
+    - B2B Services
+  target_titles:
+    - Head of Sales
+    - VP Sales
+    - RevOps
+    - Growth Lead
+    - Founder
+    - CEO
+    - CMO
+    - Director RevOps
+  target_company_sizes:
+    - 11-50
+    - 51-200
+    - 201-500
+    - 501-1000
+  target_geos:
+    - US
+    - CA
+    - GB
+    - DE
+    - FR
+    - AU
+  anti_icp_keywords:
+    - student
+    - intern
+    - recruiter
+    - freelancer
+  deal_notes: "We sell lead-enrichment & outreach. High intent = evaluating vendors, CRM migration, scaling outbound."
+
+weights:
+  # Must sum to ~1 (auto-normalized). Tune without touching prompts.
+  seniority: 0.25
+  icp_fit: 0.30
+  intent: 0.20
+  engagement: 0.15
+  data_quality: 0.10
+
+thresholds:
+  platinum: 0.82   # S — top ~8%
+  gold: 0.68       # A
+  silver: 0.50     # B
+  bronze: 0.30     # C — below is D reject
+  confidence_floor: 0.62  # below → REVIEW queue (human)
+  spam_threshold: 0.75
+  invalid_email_threshold: 0.70
+  gdpr_review_threshold: 0.75
+
+runtime:
+  concurrency: 20
+  batch_size: 50
+  rate_limit_rps: 10.0
+  max_retries: 3
+  timeout_s: 12.0
+  mock_if_no_key: true
+  model: jev-latest
